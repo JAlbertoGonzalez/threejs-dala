@@ -23,7 +23,7 @@ import Stats from 'stats.js'
 import { gsap } from 'gsap'
 
 const stats = new Stats()
-document.body.appendChild(stats.dom)
+// document.body.appendChild(stats.dom)
 
 class App {
   constructor(container) {
