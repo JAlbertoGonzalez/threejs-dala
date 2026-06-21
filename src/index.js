@@ -154,12 +154,16 @@ class App {
 
         // Visualización de conectores (aristas) entre vértices
         const edges = new EdgesGeometry(this.brain.geometry)
-        const lineMaterial = new ShaderMaterial({
+        this.lineMaterial = new ShaderMaterial({
           vertexShader: require('./shaders/line.vertex.glsl'),
           fragmentShader: require('./shaders/line.fragment.glsl'),
+          uniforms: {
+            uPointer: { value: new Vector3() },
+            uHover: { value: this.uniforms.uHover }
+          },
           transparent: true
         })
-        const lines = new LineSegments(edges, lineMaterial)
+        const lines = new LineSegments(edges, this.lineMaterial)
         this.scene.add(lines)
 
         // Create the `InstancedMesh`
@@ -319,6 +323,10 @@ class App {
         overwrite: true,
         duration: 0.3,
         onUpdate: () => {
+          if (this.lineMaterial) {
+            this.lineMaterial.uniforms.uPointer.value.copy(this.point)
+          }
+
           for (let i = 0; i < this.instancedMesh.count; i++) {
             this.instancedMesh.setUniformAt('uPointer', i, this.point)
           }
@@ -332,6 +340,10 @@ class App {
       uHover: value,
       duration: 0.25,
       onUpdate: () => {
+        if (this.lineMaterial) {
+          this.lineMaterial.uniforms.uHover.value = this.uniforms.uHover
+        }
+
         for (let i = 0; i < this.instancedMesh.count; i++) {
           this.instancedMesh.setUniformAt('uHover', i, this.uniforms.uHover)
         }
