@@ -47,8 +47,14 @@ class App {
       uHover: 0
     }
 
+    this.touchActive = false
+    this.lastInputSource = 'mouse'
+
     this._resizeCb = () => this._onResize()
     this._mousemoveCb = e => this._onMousemove(e)
+    this._touchstartCb = e => this._onTouchstart(e)
+    this._touchmoveCb = e => this._onTouchmove(e)
+    this._touchendCb = () => this._onTouchend()
   }
 
   _addLights() {
@@ -89,6 +95,9 @@ class App {
   }
 
   destroy() {
+    gsap.killTweensOf(this.camera?.position)
+    gsap.killTweensOf(this.point)
+    gsap.killTweensOf(this.uniforms)
     this.renderer.dispose()
     this._removeListeners()
   }
@@ -213,22 +222,76 @@ class App {
   _addListeners() {
     window.addEventListener('resize', this._resizeCb, { passive: true })
     window.addEventListener('mousemove', this._mousemoveCb, { passive: true })
+    window.addEventListener('touchstart', this._touchstartCb, { passive: true })
+    window.addEventListener('touchmove', this._touchmoveCb, { passive: true })
+    window.addEventListener('touchend', this._touchendCb, { passive: true })
+    window.addEventListener('touchcancel', this._touchendCb, { passive: true })
   }
 
   _removeListeners() {
     window.removeEventListener('resize', this._resizeCb, { passive: true })
     window.removeEventListener('mousemove', this._mousemoveCb, { passive: true })
+    window.removeEventListener('touchstart', this._touchstartCb, { passive: true })
+    window.removeEventListener('touchmove', this._touchmoveCb, { passive: true })
+    window.removeEventListener('touchend', this._touchendCb, { passive: true })
+    window.removeEventListener('touchcancel', this._touchendCb, { passive: true })
   }
 
   _onMousemove(e) {
-    const x = e.clientX / this.container.offsetWidth * 2 - 1
-    const y = -(e.clientY / this.container.offsetHeight * 2 - 1)
+    if (this.touchActive) {
+      return
+    }
+
+    this._handlePointerMoveFromClientCoords(e.clientX, e.clientY, 'mouse')
+  }
+
+  _onTouchstart(e) {
+    if (!e.touches || e.touches.length === 0) {
+      return
+    }
+
+    this.touchActive = true
+    const touch = e.touches[0]
+    this._handlePointerMoveFromClientCoords(touch.clientX, touch.clientY, 'touch')
+  }
+
+  _onTouchmove(e) {
+    if (!e.touches || e.touches.length === 0) {
+      return
+    }
+
+    this.touchActive = true
+    const touch = e.touches[0]
+    this._handlePointerMoveFromClientCoords(touch.clientX, touch.clientY, 'touch')
+  }
+
+  _onTouchend() {
+    this.touchActive = false
+
+    if (this.hover) {
+      this.hover = false
+      this._animateHoverUniform(0)
+    }
+  }
+
+  _handlePointerMoveFromClientCoords(clientX, clientY, source) {
+    if (!this.brain || !this.instancedMesh || !Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+      return
+    }
+
+    this.lastInputSource = source
+
+    const x = clientX / this.container.offsetWidth * 2 - 1
+    const y = -(clientY / this.container.offsetHeight * 2 - 1)
 
     this.mouse.set(x, y)
 
+    const cameraFactorX = source === 'touch' ? 0.08 : 0.15
+    const cameraFactorY = source === 'touch' ? 0.06 : 0.1
+
     gsap.to(this.camera.position, {
-      x: () => x*0.15,
-      y: () => y*0.1,
+      x: () => x * cameraFactorX,
+      y: () => y * cameraFactorY,
       duration: 0.5
     })
 
