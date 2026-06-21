@@ -6,6 +6,7 @@ uniform float uHover;
 
 varying vec3 vColor;
 varying float vDist;
+varying vec3 vLocalPos;
 
 #define PI 3.14159265359
 
@@ -38,4 +39,6 @@ void main() {
   gl_Position = projectionMatrix * modelViewMatrix * mvPosition;
 
   vColor = uColor;
+  // Keep local cube position to detect corners in fragment shader.
+  vLocalPos = position / 0.002;
 }
