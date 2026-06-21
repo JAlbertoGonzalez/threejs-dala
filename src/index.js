@@ -104,7 +104,10 @@ class App {
 
   _update() {
     this.camera.lookAt(0, 0, 0)
-    this.camera.position.z = this.isMobile ? 2.3 : 1.2
+
+    if (this.isMobile) {
+      this.camera.position.z = 2.3
+    }
   }
 
   _render() {
@@ -290,14 +293,27 @@ class App {
 
     this.mouse.set(x, y)
 
-    const cameraFactorX = source === 'touch' ? 0.08 : 0.15
-    const cameraFactorY = source === 'touch' ? 0.06 : 0.1
+    if (source === 'touch') {
+      const cameraFactorX = 0.08
+      const cameraFactorY = 0.06
 
-    gsap.to(this.camera.position, {
-      x: () => x * cameraFactorX,
-      y: () => y * cameraFactorY,
-      duration: 0.5
-    })
+      gsap.to(this.camera.position, {
+        x: () => x * cameraFactorX,
+        y: () => y * cameraFactorY,
+        duration: 0.5
+      })
+    } else {
+      const radius = 1.25
+      const yaw = x * Math.PI
+      const pitch = y * 1.1
+
+      gsap.to(this.camera.position, {
+        x: () => Math.sin(yaw) * Math.cos(pitch) * radius,
+        y: () => Math.sin(pitch) * radius,
+        z: () => Math.cos(yaw) * Math.cos(pitch) * radius,
+        duration: 0.55
+      })
+    }
 
     this.raycaster.setFromCamera(this.mouse, this.camera)
 
