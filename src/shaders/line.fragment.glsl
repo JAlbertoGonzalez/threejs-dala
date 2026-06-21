@@ -1,4 +1,6 @@
 // Shader de fragmento para líneas con opacidad basada en profundidad
+uniform float uOpacity;
+
 varying float vDepth;
 varying float vReveal;
 
@@ -8,6 +10,6 @@ void main() {
     float maxDepth = 2.0;
     float depthAlpha = 1.0 - smoothstep(minDepth, maxDepth, vDepth);
     float alpha = depthAlpha * vReveal;
-    gl_FragColor = vec4(1.0, 1.0, 1.0, alpha * 0.6); // Blanco, máximo 0.6 de opacidad
+    gl_FragColor = vec4(1.0, 1.0, 1.0, alpha * 0.72 * uOpacity); // Blanco, opacidad controlada por capa
     if (gl_FragColor.a < 0.005) discard;
 }
