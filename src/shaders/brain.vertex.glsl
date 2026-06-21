@@ -5,6 +5,7 @@ uniform float uSize;
 uniform float uHover;
 
 varying vec3 vColor;
+varying float vDist;
 
 #define PI 3.14159265359
 
@@ -18,6 +19,9 @@ void main() {
 
   // Distance between the point projected from the mouse and each instance
   float d = distance(uPointer, mvPosition.xyz);
+
+  // Distancia al origen para opacidad
+  vDist = length(mvPosition.xyz);
 
   // Define the color depending on the above value
   float c = smoothstep(0.45, 0.1, d);

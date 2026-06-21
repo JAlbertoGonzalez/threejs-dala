@@ -1,17 +1,22 @@
 
 import {
-  Scene,
-  WebGLRenderer,
-  PerspectiveCamera,
+  AmbientLight,
   BoxGeometry,
-  ShaderMaterial,
   Color,
+  DirectionalLight,
+  EdgesGeometry,
+  LineBasicMaterial,
+  LineSegments,
+  LoadingManager,
+  MathUtils,
+  Object3D,
+  PerspectiveCamera,
+  Raycaster,
+  Scene,
+  ShaderMaterial,
   Vector2,
   Vector3,
-  Raycaster,
-  Object3D,
-  MathUtils,
-  LoadingManager
+  WebGLRenderer
 } from 'three'
 
 // Remove this if you don't need to load any 3D model
@@ -19,8 +24,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 
 import { InstancedUniformsMesh } from 'three-instanced-uniforms-mesh'
 
-import Stats from 'stats.js'
 import { gsap } from 'gsap'
+import Stats from 'stats.js'
 
 const stats = new Stats()
 // document.body.appendChild(stats.dom)
@@ -46,13 +51,26 @@ class App {
     this._mousemoveCb = e => this._onMousemove(e)
   }
 
+  _addLights() {
+    // Luz ambiental suave
+    const ambientLight = new AmbientLight(0xffffff, 0.5)
+    this.scene.add(ambientLight)
+
+    // Luz direccional
+    const directionalLight = new DirectionalLight(0xffffff, 0.8)
+    directionalLight.position.set(1, 1, 2)
+    this.scene.add(directionalLight)
+  }
+
   init() {
     this._createScene()
-    this._createCamera()
-    this._createRenderer()
-    this._createRaycaster()
-    this._createLoader()
-    this._checkMobile()
+
+  this._createCamera()
+  this._createRenderer()
+  this._createRaycaster()
+  this._createLoader()
+  this._addLights()
+  this._checkMobile()
 
     this._loadModel().then(() => {
       this._addListeners()
@@ -122,9 +140,18 @@ class App {
   _loadModel() {
     return new Promise(resolve => {
       this.gltfLoader.load('./brain.glb', gltf => {
-        // The brain model is not added to the scene because is not necessary
-        // for the raycaster to work.
+        // The brain model is not added to the scene porque no es necesario para el raycaster.
         this.brain = gltf.scene.children[0]
+
+        // Visualización de conectores (aristas) entre vértices
+        const edges = new EdgesGeometry(this.brain.geometry)
+        const lineMaterial = new ShaderMaterial({
+          vertexShader: require('./shaders/line.vertex.glsl'),
+          fragmentShader: require('./shaders/line.fragment.glsl'),
+          transparent: true
+        })
+        const lines = new LineSegments(edges, lineMaterial)
+        this.scene.add(lines)
 
         // Create the `InstancedMesh`
         const geometry = new BoxGeometry(0.004, 0.004, 0.004, 1, 1, 1)
@@ -132,7 +159,6 @@ class App {
         const material = new ShaderMaterial({
           vertexShader: require('./shaders/brain.vertex.glsl'),
           fragmentShader: require('./shaders/brain.fragment.glsl'),
-          wireframe: true,
           uniforms: {
             uPointer: { value: new Vector3() },
             uColor: { value: new Color() },
@@ -147,12 +173,11 @@ class App {
         // Add the `InstancedMesh` to the scene
         this.scene.add(this.instancedMesh)
 
-        // Dummy `Object3D` that will contain the matrix of each instance
+        // Dummy `Object3D` que contendrá la matriz de cada instancia
         const dummy = new Object3D()
 
-        // Get the X, Y and Z values of each vertex of the geometry and use them to
-        // set the position of each instance.
-        // Also set the `uColor` and `uRotation` uniforms.
+        // Obtener los valores X, Y y Z de cada vértice de la geometría y usarlos para
+        // posicionar cada instancia. También setear los uniforms `uColor` y `uRotation`.
         const positions = this.brain.geometry.attributes.position.array
         for (let i = 0; i < positions.length; i += 3) {
           dummy.position.set(
@@ -165,7 +190,7 @@ class App {
 
           this.instancedMesh.setMatrixAt(i / 3, dummy.matrix)
 
-          this.instancedMesh.setUniformAt('uRotation', i / 3, MathUtils.randFloat(-1, 1))
+          this.instancedMesh.setUniformAt('uRotation', i / 3, MathUtils.randFloat(-3.14, 3.14))
 
           this.instancedMesh.setUniformAt('uSize', i / 3, MathUtils.randFloat(0.3, 3))
 
